@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ak-endfield-mcp"
+version = "1.0.0"
+description = "明日方舟：终末地 MCP Server - 每日任务攻略 + 森空岛实时游戏数据查询"
+requires-python = ">=3.10"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+authors = [{ name = "ankai" }]
+
+dependencies = [
+    "mcp>=1.0.0",
+    "httpx>=0.25.0",
+]
+
+[project.scripts]
+ak-endfield-mcp = "ak_endfield_mcp.server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ak_endfield_mcp"]
