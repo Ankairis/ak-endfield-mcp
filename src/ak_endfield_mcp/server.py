@@ -231,11 +231,16 @@ import sys
 
 
 def main():
-    transport = os.environ.get("MCP_TRANSPORT", "stdio")
-    # ModelScope hosted deployment uses streamable-http
-    if "--http" in sys.argv or os.environ.get("MODELSCOPE_HOSTED") == "1":
-        transport = "streamable-http"
-    mcp.run(transport=transport)
+    # ModelScope cloud hosting: use SSE transport on port from env
+    port = int(os.environ.get("PORT", "8000"))
+    host = os.environ.get("HOST", "0.0.0.0")
+
+    if "--sse" in sys.argv or os.environ.get("MCP_TRANSPORT") == "sse":
+        mcp.run(transport="sse", host=host, port=port)
+    elif "--http" in sys.argv or os.environ.get("MCP_TRANSPORT") == "streamable-http":
+        mcp.run(transport="streamable-http", host=host, port=port)
+    else:
+        mcp.run(transport="stdio")
 
 
 if __name__ == "__main__":
