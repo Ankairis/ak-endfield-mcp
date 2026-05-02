@@ -5,10 +5,9 @@
 ## 安装
 
 ```bash
-git clone <repo-url> ak-endfield-mcp
+git clone https://github.com/Ankairis/ak-endfield-mcp.git
 cd ak-endfield-mcp
-npm install
-npm run build
+pip install -e .
 ```
 
 ## Claude Desktop 配置
@@ -17,8 +16,21 @@ npm run build
 {
   "mcpServers": {
     "ak-endfield": {
-      "command": "node",
-      "args": ["C:/Users/ankai/PycharmProjects/ak-endfield-mcp/dist/index.js"]
+      "command": "uvx",
+      "args": ["ak-endfield-mcp"]
+    }
+  }
+}
+```
+
+或直接用 Python 运行：
+
+```json
+{
+  "mcpServers": {
+    "ak-endfield": {
+      "command": "python",
+      "args": ["-m", "ak_endfield_mcp.server"]
     }
   }
 }
@@ -48,6 +60,6 @@ npm run build
 1. 登录 [森空岛](https://skland.com)
 2. 访问 `https://web-api.skland.com/account/info/hg`
 3. 复制返回的 `data.content` 字段
-4. 在Claude中使用 `set_skland_token` 工具设置
+4. 通过 `set_skland_token` 工具设置或设置环境变量 `SKLAND_TOKEN`
 
 ⚠️ Token不可泄露，具有账户操作权限。
