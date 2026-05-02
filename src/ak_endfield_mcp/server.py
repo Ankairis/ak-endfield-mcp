@@ -226,8 +226,16 @@ async def get_gacha_records(uid: str, page: int = 1) -> str:
         return f"获取寻访记录失败: {e}"
 
 
+import os
+import sys
+
+
 def main():
-    mcp.run()
+    transport = os.environ.get("MCP_TRANSPORT", "stdio")
+    # ModelScope hosted deployment uses streamable-http
+    if "--http" in sys.argv or os.environ.get("MODELSCOPE_HOSTED") == "1":
+        transport = "streamable-http"
+    mcp.run(transport=transport)
 
 
 if __name__ == "__main__":
