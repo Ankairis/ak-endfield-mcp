@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ak-endfield-mcp"
-version = "2.0.1"
+version = "2.0.2"
 description = "明日方舟：终末地 MCP Server - 每日任务攻略 + 森空岛实时游戏数据查询"
 requires-python = ">=3.10"
 readme = "README.md"

@@ -1,10 +1,13 @@
-"""Skland (森空岛) API client for Arknights: Endfield game data."""
+"""Skland (森空岛) API client for Arknights: Endfield game data.
+
+Base URL: zonai.skland.com (NOT web-api.skland.com)
+Auth header: Cred (NOT Credential)
+"""
 
 import os
 import httpx
 
-SKLAND_BASE = "https://web-api.skland.com"
-GAME_CODE = "endfield"  # "arknights" for original, "endfield" for 终末地
+SKLAND_BASE = "https://zonai.skland.com/api/v1"
 
 
 class SklandClient:
@@ -20,7 +23,7 @@ class SklandClient:
 
         headers = kwargs.pop("headers", {})
         headers["User-Agent"] = "AkEndfieldMCP/1.0"
-        headers["Credential"] = self.token
+        headers["Cred"] = self.token
 
         async with httpx.AsyncClient(timeout=30) as client:
             resp = await client.get(
@@ -31,14 +34,16 @@ class SklandClient:
             resp.raise_for_status()
             data = resp.json()
             if data.get("code") != 0:
-                raise RuntimeError(f"Skland API error: {data.get('code')} {data.get('msg')}")
+                raise RuntimeError(f"Skland API error: {data.get('code')} {data.get('message')}")
             return data["data"]
 
-    async def get_binding_list(self):
-        """Get list of bound game characters."""
-        data = await self._request(f"/game/binding/list?gameCode={GAME_CODE}")
-        return data.get("bindingList", [])
+    async def get_game_list(self):
+        """Get list of all bound games and their character bindings.
+        Returns list of {appCode, appName, bindingList}.
+        """
+        data = await self._request("/game/player/binding")
+        return data.get("list", [])
 
     async def get_game_data(self, uid: str):
-        """Get full game status including routine (daily tasks) and status (sanity)."""
+        """Get full player game data (routine, status/ap, etc.)."""
         return await self._request(f"/game/player/gameData?uid={uid}")

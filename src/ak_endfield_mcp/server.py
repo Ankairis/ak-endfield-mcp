@@ -28,6 +28,18 @@ def _reset_countdown() -> dict:
     }
 
 
+def _find_endfield_bindings(game_list: list) -> list[dict]:
+    """Extract Endfield bindings from the game list."""
+    bindings = []
+    for game in game_list:
+        app_code = game.get("appCode", "")
+        if "endfield" in app_code.lower():
+            for b in game.get("bindingList", []):
+                b["appName"] = game.get("appName", app_code)
+                bindings.append(b)
+    return bindings
+
+
 # ===== Daily Tasks =====
 
 @mcp.tool()
@@ -76,14 +88,25 @@ async def set_token(token: str) -> str:
     """
     skland.set_token(token)
     try:
-        bindings = await skland.get_binding_list()
-        if not bindings:
-            return "Token有效，但未找到绑定的终末地角色。请确认已在森空岛绑定游戏账号。"
-        chars = "\n".join(
-            f"{i+1}. UID: {b.get('uid')} | 昵称: {b.get('nickname')} | 渠道: {b.get('channelName')}"
-            for i, b in enumerate(bindings)
+        game_list = await skland.get_game_list()
+        if not game_list:
+            return "Token有效，但未找到任何绑定的游戏角色。"
+
+        all_games = "\n".join(
+            f"- {g.get('appName', g.get('appCode'))}: {len(g.get('bindingList', []))}个角色"
+            for g in game_list
         )
-        return f"Token设置成功！\n\n已绑定的角色:\n{chars}"
+
+        endfield = _find_endfield_bindings(game_list)
+        if not endfield:
+            return f"Token有效！已绑定的游戏:\n{all_games}\n\n⚠️ 未找到终末地角色。如果你有终末地账号，请先在森空岛绑定。"
+
+        chars = "\n".join(
+            f"{i+1}. UID: {b.get('uid')} | 昵称: {b.get('nickName', b.get('nickname', '未知'))} | 渠道: {b.get('channelName', '?')}"
+            for i, b in enumerate(endfield)
+        )
+        return f"Token设置成功！\n\n终末地角色:\n{chars}"
+
     except Exception as e:
         return f"Token验证失败: {e}"
 
@@ -92,23 +115,21 @@ async def set_token(token: str) -> str:
 async def get_sanity() -> str:
     """获取终末地理智状态及每日任务进度（需先设置Token）。"""
     try:
-        bindings = await skland.get_binding_list()
-        if not bindings:
-            return "未找到绑定的终末地角色。请先 set_token。"
+        game_list = await skland.get_game_list()
+        endfield = _find_endfield_bindings(game_list)
+
+        if not endfield:
+            return "未找到绑定的终末地角色。请先 set_token，并确认已在森空岛绑定终末地游戏账号。"
 
         results = []
-        for b in bindings:
+        for b in endfield:
             uid = b.get("uid")
-            nickname = b.get("nickname", "未知")
+            nickname = b.get("nickName", b.get("nickname", "未知"))
             try:
                 data = await skland.get_game_data(uid)
                 routine = data.get("routine", {})
                 status = data.get("status", {})
-                chars = data.get("chars", [])
-
-                daily = routine.get("daily", {}) if routine else {}
-                weekly = routine.get("weekly", {}) if routine else {}
-                ap = status.get("ap", {}) if status else {}  # sanity/理智
+                ap = status.get("ap", {}) if status else {}
 
                 parts = [f"## {nickname} (UID: {uid})"]
 
@@ -117,18 +138,20 @@ async def get_sanity() -> str:
                     max_ap = ap.get("max", "?")
                     recovery = ap.get("completeRecoveryTime", 0)
                     if recovery:
-                        rec_time = datetime.fromtimestamp(recovery).strftime("%Y-%m-%d %H:%M:%S")
+                        rec_time = datetime.fromtimestamp(recovery, tz=UTC8).strftime("%Y-%m-%d %H:%M:%S")
                         parts.append(f"理智: {current}/{max_ap} | 满恢复: {rec_time}")
                     else:
                         parts.append(f"理智: {current}/{max_ap}")
 
+                daily = routine.get("daily", {}) if routine else {}
+                weekly = routine.get("weekly", {}) if routine else {}
                 if daily:
                     parts.append(f"每日任务: {daily.get('progress', '?')}/{daily.get('max', '?')}")
                 if weekly:
                     parts.append(f"每周任务: {weekly.get('progress', '?')}/{weekly.get('max', '?')}")
 
                 if not ap and not daily:
-                    parts.append("暂无实时数据。终末地游戏数据API可能尚未完全开放。")
+                    parts.append("暂无实时数据。该游戏的数据API可能尚未开放。")
 
                 results.append("\n".join(parts))
 
