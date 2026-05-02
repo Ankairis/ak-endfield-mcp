@@ -145,10 +145,13 @@ def main():
     port = int(os.environ.get("PORT", "8000"))
     host = os.environ.get("HOST", "0.0.0.0")
 
+    mcp.settings.host = host
+    mcp.settings.port = port
+
     if "--sse" in sys.argv or os.environ.get("MCP_TRANSPORT") == "sse":
-        mcp.run(transport="sse", host=host, port=port)
+        mcp.run(transport="sse")
     elif "--http" in sys.argv or os.environ.get("MCP_TRANSPORT") == "streamable-http":
-        mcp.run(transport="streamable-http", host=host, port=port)
+        mcp.run(transport="streamable-http")
     else:
         mcp.run(transport="stdio")
 
